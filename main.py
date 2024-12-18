@@ -1,4 +1,5 @@
 import pygame
+import math
 from particles import *
 
 pygame.init()
@@ -24,6 +25,7 @@ class Simulation():
         self.world = self.init_world()
         self.place_mode = "Sand"
         self.place_callback = self.place_sand
+        self.brush_size = 1
 
     def init_world(self):
         world = [[Void(_x, _y) for _x in range(self.cols)] for _y in range(self.rows)]
@@ -51,15 +53,30 @@ class Simulation():
         font = pygame.font.Font(pygame.font.match_font('arial'), 32)
         text = font.render(self.place_mode, True, (255,255,255))
         toggle_info_text = font.render("RMB(SWAP)", True, (255,255,255))
+        brush_size_text = font.render(f"Brush: {self.brush_size}", True, (255,255,255))
         screen.blit(text, (25,25))
         screen.blit(toggle_info_text, (25,75))
+        screen.blit(brush_size_text, (25,135))
 
     def place_water(self, x, y):
         self.world[x][y] = Water(x,y)
 
     def place_sand(self, x, y):
-        print(x,y)
-        self.world[x][y] = Sand(x,y)
+        self.world[x][y] = Sand(x, y)
+        
+    def place(self, x, y):
+        if self.brush_size == 1:
+            self.place_callback(x, y)
+            return
+        center = (x,y)
+        radius = math.ceil(self.brush_size / 2)
+        for _x in range(center[0]-radius, center[0]+radius):
+            for _y in range(center[1]-radius, center[1]+radius):
+                distance_squared = (_x - center[0]) ** 2 + (_y - center[1]) ** 2
+                if distance_squared <= radius ** 2:
+                    if _x < self.cols - 1 and _x >= 0:
+                        if _y < self.rows - 1 and _y >= 0:
+                            self.place_callback(_x, _y)
 
     def on_mouse_down(self, mouse_pos, code):
         x, y = mouse_pos
@@ -69,7 +86,7 @@ class Simulation():
         y = y // ZOOM
         if x < self.cols and x >= 0:
             if y < self.rows and y >= 0:
-                self.place_callback(x, y)
+                self.place(x, y)
 
     def toggle_place_mode(self):
         if self.place_mode == "Sand":
@@ -79,6 +96,11 @@ class Simulation():
             self.place_mode = "Sand"
             self.place_callback = self.place_sand
 
+    def alter_brush_size(self, direction):
+        self.brush_size += direction
+        if self.brush_size < 1:
+            self.brush_size = 1
+
     def start_simulation(self):
         running = True
         while running:
@@ -87,6 +109,8 @@ class Simulation():
                     running = False
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
                     self.toggle_place_mode()
+                if event.type == pygame.MOUSEWHEEL:
+                    self.alter_brush_size(event.y)
                     
             if pygame.mouse.get_pressed()[0]:
                 self.on_mouse_down(pygame.mouse.get_pos(), 0)

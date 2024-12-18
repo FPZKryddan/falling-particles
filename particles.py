@@ -36,15 +36,19 @@ class Sand(Particle):
 
     def update(self, world, newWorld, x, y):
         rows = len(world[0])
-        if y < rows - 1: # check for ground
-            belowParticle = world[x][y+1]
-        else:
-            belowParticle = Void(x, y+1)
-
-        if isinstance(belowParticle, Void) and y < rows - 1:
-            newWorld[x][y+1] = Sand(x, y+1)
-        else:
+        if y == rows - 1: # if at bottom
             newWorld[x][y] = Sand(x, y)
+            return newWorld
+        
+        belowParticle = world[x][y+1]
+
+        if isinstance(belowParticle, Void):
+            newWorld[x][y+1] = Sand(x, y+1)
+        elif belowParticle.isSolid():
+            newWorld[x][y] = Sand(x, y)
+        elif isinstance(belowParticle, Water):
+            newWorld[x][y+1] = Sand(x, y+1)
+            newWorld[x][y] = Water(x, y)
         return newWorld
 
 class Water(Particle):
@@ -65,15 +69,15 @@ class Water(Particle):
             return newWorld
             
 
-        if not isinstance(belowParticle, Void) or y == rows - 1:
-            if x + 1 < cols - 1:
-                if isinstance(world[x+1][y+1], Void):
-                    newWorld[x+1][y+1] = Water(x+1, y+1)
-                    return newWorld
-            if x - 1 >= 0:
-                if isinstance(world[x-1][y+1], Void):
-                    newWorld[x-1][y+1] = Water(x-1, y+1)
-                    return newWorld
+        # if not isinstance(belowParticle, Void) or y == rows - 1:
+        #     if x + 1 < cols - 1:
+        #         if isinstance(world[x+1][y+1], Void):
+        #             newWorld[x+1][y+1] = Water(x+1, y+1)
+        #             return newWorld
+        #     if x - 1 >= 0:
+        #         if isinstance(world[x-1][y+1], Void):
+        #             newWorld[x-1][y+1] = Water(x-1, y+1)
+        #             return newWorld
 
         if isinstance(belowParticle, Void) and y < rows - 1:
             newWorld[x][y+1] = Water(x, y+1)
