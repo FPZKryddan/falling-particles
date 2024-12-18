@@ -1,4 +1,5 @@
 import pygame
+import random
 
 class Particle():
     def __init__(self, x, y):
@@ -61,27 +62,34 @@ class Water(Particle):
     def update(self, world, newWorld, x, y):
         cols = len(world)
         rows = len(world[0])
-        belowParticle = None
-        if y < rows - 1: # check for ground
-            belowParticle = world[x][y+1]
-        else:
-            newWorld[x][y] = Water(x,y)
-            return newWorld
-            
-
-        # if not isinstance(belowParticle, Void) or y == rows - 1:
-        #     if x + 1 < cols - 1:
-        #         if isinstance(world[x+1][y+1], Void):
-        #             newWorld[x+1][y+1] = Water(x+1, y+1)
-        #             return newWorld
-        #     if x - 1 >= 0:
-        #         if isinstance(world[x-1][y+1], Void):
-        #             newWorld[x-1][y+1] = Water(x-1, y+1)
-        #             return newWorld
-
-        if isinstance(belowParticle, Void) and y < rows - 1:
-            newWorld[x][y+1] = Water(x, y+1)
+        if y == rows - 1: # if at bottom
+            newWorld[x][y] = Water(x, y)
             return newWorld
         
-        newWorld[x][y] = Water(x, y)
+        belowParticle = world[x][y+1]
+
+        #if on void
+        if isinstance(belowParticle, Void):
+            newWorld[x][y+1] = Water(x, y+1)
+            return newWorld
+
+        # if on solid
+        if belowParticle.isSolid():
+            # no collisions
+            left = x-1 > 0 and isinstance(world[x-1][y], Void)
+            right = x+1 < cols - 1 and isinstance(world[x+1][y], Void)
+            down_left = left and isinstance(world[x-1][y+1], Void)
+            down_right = right and isinstance(world[x+1][y+1], Void)
+            # if on hill spread randomly
+            if down_left or down_right:
+                if down_left and down_left:
+                    spread = random.choice([(x-1, y+1), (x+1, y+1)])
+                    _x, _y = spread
+                    newWorld[_x][_y] = Water(_x, _y)
+                elif down_left:
+                    newWorld[x-1][y+1] = Water(x-1, y+1)
+                elif down_right:
+                    newWorld[x+1][y+1] = Water(x+1, y+1)
+        newWorld[x][y] = Water(x,y)
         return newWorld
+    
